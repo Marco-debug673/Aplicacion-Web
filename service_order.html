@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/png" href="logo-taller-mecanico.png">
+    <title>Taller Mecánico</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.6/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+    <!--<link rel="stylesheet" href="sweetalert2.min.css">-->
+    <style>
+    .btn-anim:hover {
+      transform: scale(1.03);
+      transition: transform 0.3s ease;
+    }
+  </style>
+</head>
+<body class="bg-info">
+    <div class="container d-flex justify-content-center align-items-center min-vh-100">
+        <form action="/service" method="post" class="bg-dark p-4 rounded shadow" style="max-width: 400px; width: 100%;" onsubmit="showLoading(event)">
+            <h2 class="text-primary mb-4 text-center">Solicitud de Servicio</h2>
+            <h6 class="text-danger mb-4 text-center">*Todos los campos son obligatorios*</h6>
+            <div class="form-floating mb-3">
+                <input type="text" class="form-control" id="floatingInputName" name="floatingInputName" placeholder="nombre">
+                <label for="floatingInputName">Nombre</label>
+            </div>
+            <div class="form-floating mb-3">
+                <input type="text" class="form-control" id="floatingInputSurname" name="floatingInputName" placeholder="nombre">
+                <label for="floatingInputSurname">Apellidos</label>
+            </div>
+            <div class="form-floating mb-3">
+                <input type="number" class="form-control" id="floatingInputNumeroTelefono" name="floatingInputNumeroTelefono" placeholder="número de teléfono">
+                <label for="floatingInputNumeroTelefono">Número de Teléfono</label>
+            </div>
+            <div class="form-floating mb-3">
+                <select class="form-select" id="tipoVehiculoSeleccion" aria-placeholder="">
+                    <option selected disabled>Seleccione una opción</option>
+                    <option value="1">Automóvil</option>
+                    <option value="2">Camioneta</option>
+                    <option value="3">Moto</option>
+                </select>
+                <label for="tipoVehiculoSeleccion">Seleccione el tipo de vehículo</label>
+            </div>
+            <div class="form-floating mb-3">
+                <select class="form-select" id="fallaDetectada" aria-label="Default select example" aria-placeholder="">
+                    <option selected disabled>Seleccione una opción</option>
+                    <option value="1">El auto no arranca</option>
+                    <option value="2">El motor se sobrecalienta</option>
+                    <option value="3">Fallas en el sistema de inyección</option>
+                    <option value="4">Problemas en las luces</option>
+                    <option value="5">Fallas en los frenos</option>
+                    <option value="6">Llantas ponchadas o con baja presión</option>
+                    <option value="7">Batería descargada o defectuosa</option>
+                    <option value="8">Problema del alternador</option>
+                    <option value="9">Problema en el sistemas eléctrico</option>
+                    <option value="10">Falta de combustible</option>
+                    <option value="11">Motor de arranque</option>
+                    <option value="12">Filtro de partículas diésel</option>
+                    <option value="13">Problemas de aceleración</option>
+                    <option value="14">Bujía desgastada</option>
+                    <option value="15">Falla en bomba de aceite</option>
+                    <option value="16">Sensor de oxígeno defectuoso</option>
+                    <option value="17">Mala lubricación</option>
+                </select>
+                <label for="fallaDetectada">Seleccione la falla detectada</label>
+            </div>
+            <br>
+            <div class="d-flex flex-column flex-sm-row justify-content-between gap-2 mb-3">
+                <a class="btn btn-dark btn-anim flex-fill" href="menu.html">Regresar</a>
+                <button class="btn btn-warning btn-anim flex-fill" type="submit" id="saveBtn" >Guardar</button>
+            </div>
+            <div class="modal fade" id="ayudaModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="ayudaModalLabel" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-scrollable">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h1 class="modal-title fs-5" id="ayudaModalLabel">Datos del Vehículo</h1>
+                        </div>
+                    <div class="modal-body">
+                        <form method="post">
+                            <div class="row g-3">
+                                <div class="col-md-4">
+                                    <div class="form-floating">
+                                        <input type="text" class="form-control" id="marcaVehiculo" placeholder="Marca">
+                                        <label for="marcaVehiculo">Marca</label>
+                                    </div>
+                                </div>
+                            <div class="col-md-4">
+                                <div class="form-floating">
+                                    <input type="text" class="form-control" id="modeloVehiculo" placeholder="Modelo">
+                                    <label for="modeloVehiculo">Modelo</label>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-floating">
+                                    <input type="number" class="form-control" id="anioVehiculo" placeholder="Año">
+                                    <label for="anioVehiculo">Año</label>
+                                </div>
+                            </div>
+                        </div>
+                            <div id="camionetaFields" class="row g-3 mt-2 d-none">
+                                <div class="col-md-6">
+                                    <div class="form-floating">
+                                        <select class="form-select" id="tipoVehiculo3" aria-label="Selecciona el combustible">
+                                            <option selected disabled>Seleccione una opción</option>
+                                            <option value="1">Pickup</option>
+                                            <option value="2">Pickup Compacta</option>
+                                            <option value="3">Pickup de Tamaño Completo</option>
+                                            <option value="4">SUV</option>
+                                            <option value="5">SUV Compactos</option>
+                                            <option value="6">SUV Medianos</option>
+                                            <option value="7">Crossovers</option>
+                                            <option value="8">Crossovers Compactos</option>
+                                            <option value="9">Crossovers de Tamaño Mediano</option>
+                                            <option value="10">Crossovers de Lujo</option>
+                                        </select>
+                                        <label for="tipoVehiculo3">Tipo de Camioneta</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-floating">
+                                        <input type="number" class="form-control" id="capacidadCargaVehiculo" placeholder="Capacidad de Carga">
+                                        <label for="capacidadCargaVehiculo">Capacidad de Carga</label>
+                                    </div>
+                                </div>
+                            </div>
+                            <div id="motoFields" class="row g-3 mt-2 d-none">
+                                <div class="col-md-6">
+                                    <div class="form-floating">
+                                        <input type="number" class="form-control" id="cilindrajeVehiculo" placeholder="Cilindraje">
+                                        <label for="cilindrajeVehiculo">Cilindraje</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-floating">
+                                        <select class="form-select" id="tipoVehiculo2" aria-label="Selecciona el tipo de moto">
+                                            <option selected disabled>Seleccione una opción</option>
+                                            <option value="1">Deportiva</option>
+                                            <option value="2">Naked</option>
+                                            <option value="3">Trail</option>
+                                            <option value="4">Scooter</option>
+                                            <option value="5">Clásica</option>
+                                            <option value="6">Cafe Racer</option>
+                                            <option value="7">Custom</option>
+                                            <option value="8">Scrambler</option>
+                                            <option value="9">Enduro</option>
+                                            <option value="10">Touring</option>
+                                        </select>
+                                        <label for="tipoVehiculo2">Tipo de Moto</label>
+                                    </div>
+                                </div>
+                            </div>
+                            <div id="comunesFinales" class="row g-3 mt-2">
+                                <div class="col-md-6">
+                                    <div class="form-floating">
+                                        <select class="form-select" id="combustibleVehiculo" aria-label="Selecciona el combustible">
+                                            <option selected disabled>Seleccione una opción</option>
+                                            <option value="1">Magna</option>
+                                            <option value="2">Premium</option>
+                                            <option value="3">Diesel</option>
+                                        </select>
+                                        <label for="combustibleVehiculo">Tipo de Combustible</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-floating">
+                                        <select class="form-select" id="colorVehiculo" aria-label="Selecciona el color">
+                                            <option selected disabled>Seleccione una opción</option>
+                                            <option value="1">Rojo</option>
+                                            <option value="2">Negro</option>
+                                            <option value="3">Blanco</option>
+                                            <option value="4">Gris</option>
+                                            <option value="5">Azul</option>
+                                            <option value="6">Verde</option>
+                                            <option value="7">Amarillo</option>
+                                            <option value="8">Plata</option>
+                                            <option value="9">Naranja</option>
+                                            <option value="10">Morado</option>
+                                            <option value="11">Rosado</option>
+                                            <option value="12">Violeta</option>
+                                            <option value="13">Café</option>
+                                            <option value="14">Marrón</option>
+                                            <option value="15">Beige</option>
+                                            <option value="16">Dorado</option>
+                                        </select>
+                                        <label for="colorVehiculo">Color</label>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="d-grid mt-4">
+                                <button type="submit" class="btn btn-outline-warning btn-anim" id="saveBtn2">
+                                    Guardar</button>
+                            </div>
+                        </form>
+                    </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-dark" data-bs-dismiss="modal">Cerrar</button>
+                </div>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+<!--Al seleccionar un tipo de vehículo, se abre una ventana modal
+donde se tiene que llenar los datos del vehículo-->
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const selectTipo = document.querySelector("select#tipoVehiculoSeleccion");
+            const camionetaFields = document.getElementById("camionetaFields");
+            const motoFields = document.getElementById("motoFields");
+
+            selectTipo.addEventListener("change", function () {
+                const value = this.value;
+
+                camionetaFields.classList.add("d-none");
+                motoFields.classList.add("d-none");
+
+                if (value === "1") {
+                
+                } else if (value === "2") {
+                    camionetaFields.classList.remove("d-none");
+                    } else if (value === "3") {
+                        motoFields.classList.remove("d-none");
+                    }
+                });
+            });
+    </script>
+<!--Se oculta los campos de tipo de camioneta, capacidad de carga, cilindraje y tipo de moto
+cuando es seleccionado el tipo de vehículo por automóvil. Y se muestran solo cuando es
+seleccionado el tipo de vehículo camioneta o moto-->
+    <script>
+        document.getElementById('tipoVehiculoSeleccion').addEventListener('change', function () {
+            if (this.value === '1') {
+                const ayudaModal = new bootstrap.Modal(document.getElementById('ayudaModal'));
+                ayudaModal.show();
+            } else if (this.value === '2') {
+                const ayudaModal = new bootstrap.Modal(document.getElementById('ayudaModal'));
+                ayudaModal.show();
+            } else {
+                const ayudaModal = new bootstrap.Modal(document.getElementById('ayudaModal'));
+                ayudaModal.show();
+            }
+        });
+    </script>
+<!--Recursos de dependencias de bootstrap, sweetalert2 y anclaje de javascript-->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.6/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script type="module" src="service_order.js"></script>
+</body>
+</html>
