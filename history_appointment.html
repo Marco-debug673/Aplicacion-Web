@@ -60,7 +60,8 @@
 <!-- Firebase SDK como módulo en línea -->
  <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-app.js";
-import { getDatabase, ref, get, remove, onValue } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-database.js";
+import { getDatabase, ref, get, remove, onValue, query, orderByChild, equalTo } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-database.js";
+import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-auth.js";
 
 // Configuración de Firebase
 const firebaseConfig = {
@@ -76,10 +77,10 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const database = getDatabase(app);
+const auth = getAuth();
 
 window.addEventListener("DOMContentLoaded", () => {
     const tbody = document.querySelector("tbody");
-    const citasRef = ref(database, "Citas");
     const searchInput = document.getElementById("busquedaInput");
     const searchBtn = document.getElementById("searchBtn");
     const deleteBtn = document.getElementById("deleteBtn");
@@ -120,40 +121,54 @@ window.addEventListener("DOMContentLoaded", () => {
             index++;
         });
     }
+
+    onAuthStateChanged(auth, (user) => {
+        if (!user) {
+            console.error("Usuario no autenticado");
+            return;
+        }
     
-    onValue(citasRef, (snapshot) => {
-        let hayDatos = false;
-        const citasTemp = [];
+        let citasRef;
 
-        snapshot.forEach((childSnapshot) => {
-            hayDatos = true;
-            const data = childSnapshot.val();
-            const id = childSnapshot.key;
-            citasTemp.push({ id, ...data });
-        });
-
-        if (hayDatos) {
-            citas = citasTemp;
-            mostrarCitas(citas);
+        if (rol === "mecánico" || rol === "admin") {
+            // Mecánico/Admin → ven todo
+            citasRef = ref(database, "Citas");
         } else {
+            // Cliente → solo sus citas
+            citasRef = query(
+                ref(database, "Citas"),
+                orderByChild("uid"),
+                equalTo(user.uid)
+            );
+        }
+
+        onValue(citasRef, (snapshot) => {
+            let hayDatos = false;
+            const citasTemp = [];
+
+            snapshot.forEach((childSnapshot) => {
+                hayDatos = true;
+                const data = childSnapshot.val();
+                const id = childSnapshot.key;
+                citasTemp.push({ id, ...data });
+            });
+
+            if (hayDatos) {
+                citas = citasTemp;
+                mostrarCitas(citas);
+            } else {
+                tbody.innerHTML = `<tr><td colspan="5" class="text-center">No hay citas agendadas.</td></tr>`;
+            }
+        }, (error) => {
             Swal.fire({
-                icon: "info",
-                text: "No hay citas agendadas.",
+                icon: "error",
+                title: "Error",
+                text: "Error al obtener datos",
                 background: '#000000',
                 color: '#ffffff',
                 confirmButtonText: "Aceptar",
                 confirmButtonColor: "#0d6efd"
             });
-        }
-    }, (error) => {
-        Swal.fire({
-            icon: "error",
-            title: "Error",
-            text: "Error al obtener datos: " + error.message,
-            background: '#000000',
-            color: '#ffffff',
-            confirmButtonText: "Aceptar",
-            confirmButtonColor: "#0d6efd"
         });
     });
 
@@ -170,9 +185,7 @@ window.addEventListener("DOMContentLoaded", () => {
         }
         const filtro = convertFormatDDMMYYYY(valorInput);
 
-        const resultados = citas.filter((cita) => {
-            return cita.fecha === filtro;
-        });
+        const resultados = citas.filter((cita) => cita.fecha === filtro);
 
         if (resultados.length === 0) {
             tbody.innerHTML = `<tr><td colspan="5" class="text-center">No hay ninguna cita agendada para esta fecha.</td></tr>`;
@@ -225,7 +238,6 @@ window.addEventListener("DOMContentLoaded", () => {
                     remove(citaRef)
                         .then(() => {
                             fila.remove();
-                            eliminadas++;
                             citas = citas.filter(c => c.id !== id);
                         })
                         .catch((error) => {
@@ -235,8 +247,8 @@ window.addEventListener("DOMContentLoaded", () => {
 
                 Swal.fire({
                     icon: "success",
-                    title: "Citas Eliminadas",
-                    text: "Las citas seleccionadas han sido eliminadas.",
+                    title: "Cita Eliminada",
+                    text: "La cita seleccionada ha sido eliminada.",
                     background: '#000000',
                     color: '#ffffff',
                     confirmButtonText: "Aceptar",
