@@ -45,7 +45,7 @@
 <!--Asignación de roles-->
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-  import { getDatabase, ref, set, remove } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+  import { getDatabase, ref, set, remove, get, onValue } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
   import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
   const firebaseConfig = {
@@ -63,31 +63,34 @@
   const auth = getAuth();
   const db = getDatabase();
 
-  // Usuarios registrados
-  const usuarios = [
-    { uid: "HkYV7cSB1DSeBGXurIWeAIQHgTh2", email: "marcobdelafuente99@gmail.com" },
-    { uid: "KoVvZWLmQqPGqP1LBISNFehJloQ2", email: "parttimeidOt.yjp@gmail.com" },
-    { uid: "q1qDkB5YjkNsrNUrQ6065sPSMxw1", email: "omar@gmail.com" },
-    { uid: "5IvJdnWrqwV2lOlzmZ8JFyN0vDE2", email: "karen180619@gmail.com" },
-    { uid: "G6OtRlBS9QXbOpc3bEFrRwArtEb2", email: "anthony_uchiha_99@hotmail.com" },
-    { uid: "6PJosX7YddZcBusb081qwOGzM453", email: "mabdelafuente_uzumaki_12@outlook.com" }
-  ];
-
-  // Agregar usuarios a la tabla dinámicamente
+  // Mostrar usuarios a la tabla dinámicamente
   const tbody = document.querySelector("tbody");
-  usuarios.forEach(usuario => {
-    const tr = document.createElement("tr");
-    tr.className = "text-center align-middle";
-    tr.innerHTML = `
-      <td>${usuario.email}</td>
-      <td><input type="checkbox" name="${usuario.uid}" value="admin" class="form-check-input"></td>
-      <td><input type="checkbox" name="${usuario.uid}" value="mecánico" class="form-check-input"></td>
-      <td><input type="checkbox" name="${usuario.uid}" value="cliente" class="form-check-input"></td>
-    `;
-    tbody.appendChild(tr);
-  });
+  let usuarios = [];
+  
+  onValue(ref(db, 'usuarios'), (snapshop) => {
+    tbody.innerHTML = "";
+    usuarios = [];
 
-  // Botón para guardar roles hailitados
+    if(snapshop.exists()) {
+      snapshop.forEach(childSnapshot => {
+        const uid = childSnapshot.key;
+        const data = childSnapshot.val();
+        usuarios.push({uid, email: data.email});
+
+        const tr = document.createElement("tr");
+        tr.className = "text-center align-middle";
+        tr.innerHTML = `
+          <td>${data.email}</td>
+          <td><input type="checkbox" name="${uid}" value="admin" class="form-check-input" ${data.rol === "admin" ? "checked" : ""}></td>
+          <td><input type="checkbox" name="${uid}" value="mecánico" class="form-check-input" ${data.rol === "mecánico" ? "checked" : ""}></td>
+          <td><input type="checkbox" name="${uid}" value="cliente" class="form-check-input" ${data.rol === "cliente" ? "checked" : ""}></td>
+        `;
+        tbody.appendChild(tr);
+      })
+    }
+  })
+
+  // Botón para asignar roles
   document.getElementById("permitBtn").addEventListener("click", () => {
     usuarios.forEach(usuario => {
       const radios = document.getElementsByName(usuario.uid);
@@ -124,7 +127,8 @@
       }
     });
   });
-// Botón para deshabilitar usuarios (elimina sus roles de Realtime DB)
+
+// Botón para borrar roles
 document.getElementById("denyBtn").addEventListener("click", () => {
   usuarios.forEach(usuario => {
     const radios = document.getElementsByName(usuario.uid);
@@ -134,7 +138,7 @@ document.getElementById("denyBtn").addEventListener("click", () => {
     });
 
     if (checked) {
-      remove(ref(db, 'usuarios/' + usuario.uid))
+      remove(ref(db, 'usuarios/' + usuario.uid + '/rol'), "")
         .then(() => {
             Swal.fire({
                 icon: 'success',
