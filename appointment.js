@@ -1,5 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-app.js";
 import { getDatabase, ref, push, set} from "https://www.gstatic.com/firebasejs/10.9.0/firebase-database.js";
+import { getAuth } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-auth.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyDOsQaU-vohMbkc7VujDgklWqz0Yebdjyo",
@@ -14,10 +15,20 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
+const auth = getAuth();
 
 const form = document.getElementById("appointmentForm");
-form.addEventListener("submit", (e) => {
+form.addEventListener("submit", async (e) => {
   e.preventDefault();
+
+  const user = auth.currentUser;
+
+  if (!user) {
+    Swal.fire({ icon: 'error', title: 'Error', text: 'Debes iniciar sesión.',
+      background: '#000000',color: '#ffffff', confirmButtonText: "Aceptar",
+      confirmButtonColor: '#0d6efd'});
+    return;
+  }
 
   const nombre = document.getElementById("fullname").value.trim();
   const apellidos = document.getElementById("surname").value.trim();
@@ -39,10 +50,10 @@ form.addEventListener("submit", (e) => {
     return;
   }
 
-  const citasRef = ref(db, "Citas");
-  const nuevaCita = push(citasRef);
+  const nuevaCitaRef = push(ref(db, "Citas"));
 
-  set(nuevaCita, {
+  await set(nuevaCitaRef, {
+    uid: user.uid,
     nombre: nombre,
     fecha: fecha2,
     hora: hora,
@@ -63,7 +74,7 @@ form.addEventListener("submit", (e) => {
     .catch((error) => {
       Swal.fire({
         icon: 'error',
-        text: 'No se pudo agendar la cita:' + error.message,
+        text: 'No se pudo agendar la cita',
         background: '#000000',
         color: '#ffffff',
         confirmButtonText: "Aceptar",
