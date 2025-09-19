@@ -1,7 +1,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-app.js";
 import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-analytics.js";
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-auth.js";
-import { getDatabase, ref, get, child } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-database.js";
+import { getDatabase, ref, get, child, set } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-database.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyDOsQaU-vohMbkc7VujDgklWqz0Yebdjyo",
@@ -22,6 +22,14 @@ const db = getDatabase();
 export class ManageAccount {
   register(email, password) {
     createUserWithEmailAndPassword(auth, email, password)
+      .then((userCredential) => {
+        const user = userCredential.user;
+
+        //Guardar en Realtime Database
+        set(ref(db, `usuarios/${user.uid}`), {
+          email: email
+        })
+      })
       .then((_) => {
         Swal.fire({
           icon: 'success',
@@ -34,6 +42,15 @@ export class ManageAccount {
         window.location.href = "index.html";
       });
     })
+      .catch((error) => {
+          Swal.fire({
+            icon: 'warning',
+            text: 'Esta cuenta ya existe',
+            background: '#000000',
+            color: '#ffffff',
+            confirmButtonColor: '#ffc107'
+          });
+        })
       .catch((error) => {
         //console.error(error.message);
         Swal.fire({
@@ -92,7 +109,14 @@ export class ManageAccount {
           }
         })
         .catch((error) => {
-          alert("Error al obtener el rol. Intenta más tarde.");
+          Swal.fire({
+              icon: 'error',
+              text: 'Error al obtener el rol. Intenta más tarde.',
+              confirmButtonText: 'Aceptar',
+              confirmButtonColor: '#0d6efd',
+              background: '#000000',
+              color: '#ffffff'
+            })
         });
     })
     .catch((error) => {
