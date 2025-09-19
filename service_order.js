@@ -1,5 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-app.js";
 import { getDatabase, ref, push, set, update } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-database.js";
+import { getAuth } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-auth.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyDOsQaU-vohMbkc7VujDgklWqz0Yebdjyo",
@@ -14,11 +15,21 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
+const auth = getAuth();
 
 let idSolicitudActual = null;
 
-document.getElementById("saveBtn2").addEventListener("click", (e) => {
+document.getElementById("saveBtn2").addEventListener("click", async (e) => {
   e.preventDefault();
+
+  const user = auth.currentUser;
+
+  if (!user) {
+    Swal.fire({ icon: 'error', title: 'Error', text: 'Debes iniciar sesión.',
+      background: '#000000',color: '#ffffff', confirmButtonText: "Aceptar",
+      confirmButtonColor: '#0d6efd'});
+    return;
+  }
 
   const marca = document.getElementById("marcaVehiculo").value.trim();
   const modelo = document.getElementById("modeloVehiculo").value.trim();
@@ -57,7 +68,7 @@ document.getElementById("saveBtn2").addEventListener("click", (e) => {
       Swal.fire({
         icon: 'warning',
         title: 'Campos vacíos',
-        text: 'Por favor, complete los campos específicos de la camioneta.',
+        text: 'Por favor, complete los campos relacionados con la camioneta.',
         background: '#000000',
         color: '#ffffff',
         confirmButtonText: "Aceptar",
@@ -73,7 +84,7 @@ document.getElementById("saveBtn2").addEventListener("click", (e) => {
       Swal.fire({
         icon: 'warning',
         title: 'Campos vacíos',
-        text: 'Por favor, complete los campos específicos de la moto.',
+        text: 'Por favor, complete los campos relacionados con la moto.',
         background: '#000000',
         color: '#ffffff',
         confirmButtonText: "Aceptar",
@@ -95,11 +106,13 @@ document.getElementById("saveBtn2").addEventListener("click", (e) => {
     tipoMoto: tipoVehiculoTexto === "moto" ? document.getElementById("tipoVehiculo2").selectedOptions[0]?.textContent || "" : null
   };
 
-  const solicitudesRef = ref(db, "solicitudes");
-  const nuevaSolicitud = push(solicitudesRef);
-  idSolicitudActual = nuevaSolicitud.key;
+  const nuevaSolicitudRef = push(ref(db, "solicitudes"));
+  idSolicitudActual = nuevaSolicitudRef.key;
 
-  set(ref(db, `solicitudes/${idSolicitudActual}/tipovehiculo/datos`), datosVehiculo)
+  await set(ref(db, `solicitudes/${idSolicitudActual}`), {
+    uid: user.uid,
+    tipovehiculo: {datos: datosVehiculo}
+  })
     .then(() => {
       Swal.fire({
         icon: 'success',
@@ -114,8 +127,8 @@ document.getElementById("saveBtn2").addEventListener("click", (e) => {
     })
     .catch((error) => {
       Swal.fire({
-        icon: 'success',
-        text: 'No se pudo guardar:'  + error.message,
+        icon: 'error',
+        text: 'No se pudieron guardar los datos',
         background: '#000000',
         color: '#ffffff',
         confirmButtonText: "Aceptar",
@@ -123,14 +136,23 @@ document.getElementById("saveBtn2").addEventListener("click", (e) => {
     });
 });
 
-document.getElementById("saveBtn").addEventListener("click", (e) => {
+document.getElementById("saveBtn").addEventListener("click", async (e) => {
   e.preventDefault();
+
+  const user = auth.currentUser;
+
+  if (!user) {
+    Swal.fire({ icon: 'error', title: 'Error', text: 'Debes iniciar sesión.',
+      background: '#000000',color: '#ffffff', confirmButtonText: "Aceptar",
+      confirmButtonColor: '#0d6efd'});
+    return;
+  }
 
   if (!idSolicitudActual) {
     Swal.fire({
       icon: 'error',
       title: 'Advertencia',
-      text: 'Debe registrar primero los datos del vehículo antes de continuar.',
+      text: 'Primero debe registrar los datos del vehículo antes de continuar.',
       background: '#000000',
       color: '#ffffff',
       confirmButtonText: "Aceptar",
@@ -171,12 +193,11 @@ const clienteData = {
     'tipovehiculo/tipo': tipoVehiculoTexto
   };
 
-  const solicitudRef = ref(db, `solicitudes/${idSolicitudActual}`);
-  update(solicitudRef, clienteData)
+  await update(ref(db, `solicitudes/${idSolicitudActual}`), clienteData)
     .then(() => {
       Swal.fire({
         icon: 'success',
-        text: 'La solicitud ha sido guardada correctamente.',
+        text: 'Su solicitud ha sido guardada correctamente.',
         background: '#000000',
         color: '#ffffff',
         confirmButtonText: "Aceptar",
