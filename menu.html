@@ -125,7 +125,7 @@
                 aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
               </button>
-            <div class="collapse navbar-collapse justify-contend-end" id="navbarNav">
+            <div class="collapse navbar-collapse justify-content-end" id="navbarNav">
               <ul class="navbar-nav w-100 d-flex flex-column flex-lg-row text-center">
                 <li class="nav-item flex-fill">
                   <a class="nav-link" href="register_user_private.html" id="btnRegistrarUsuario">
@@ -177,7 +177,7 @@
                 aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
               </button>
-            <div class="collapse navbar-collapse justify-contend-end" id="navbarNav">
+            <div class="collapse navbar-collapse justify-content-end" id="navbarNav">
               <ul class="navbar-nav w-100 d-flex flex-column flex-lg-row text-center">
                 <li class="nav-item flex-fill">
                   <a class="nav-link" href="history_service.html">Historial de Servicios</a>
@@ -215,7 +215,7 @@
                 aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
               </button>
-            <div class="collapse navbar-collapse justify-contend-end" id="navbarNav">
+            <div class="collapse navbar-collapse justify-content-end" id="navbarNav">
               <ul class="navbar-nav w-100 d-flex flex-column flex-lg-row text-center">
                 <li class="nav-item flex-fill">
                   <a class="nav-link" href="service_order.html">Solicitud de Servicios</a>
@@ -277,14 +277,15 @@ del sistema para el mecánico y el cliente-->
           <p>Consultar el historial de tus citas previas, y en caso de que ya no desee tener cita. También, la podrá eliminar pero antes se le mostrará una alerta de confirmación.</p>
         </div>
       </div>
-      <div class="modal-footer">
+      <div class="modal-footer d-flex justify-content-between align-items-center">
+        <h6 class="mb-0">Versión 2.0.1</h6>
         <button type="button" class="btn btn-outline-dark" data-bs-dismiss="modal">Cerrar</button>
       </div>
     </div>
   </div>
 </div>
 <!--Se puede visualizar el carrusel de imágenes sobre el taller mecánico-->
-<div id="carouselExampleFade" class="carousel slide carousel-fade mt-5" data-bs-ride="carousel" data-bs-interval="1000">
+<div id="carouselExampleFade" class="carousel slide carousel-fade mt-5" data-bs-ride="carousel" data-bs-interval="2500">
   <div class="carousel-inner">
     <div class="carousel-item active">
       <img src="image1.png" class="d-block w-100 img-fluid" alt="...">
@@ -299,15 +300,6 @@ del sistema para el mecánico y el cliente-->
       <img src="image4.png" class="d-block w-100 img-fluid" alt="...">
     </div>
   </div>
-<!--Flechas de carrusel de imagénes-->
-  <!--<button class="carousel-control-prev" type="button" data-bs-target="#carouselExampleFade" data-bs-slide="prev">
-    <span class="carousel-control-prev-icon" aria-hidden="true"></span>
-    <span class="visually-hidden">Anterior</span>
-  </button>
-  <button class="carousel-control-next" type="button" data-bs-target="#carouselExampleFade" data-bs-slide="next">
-    <span class="carousel-control-next-icon" aria-hidden="true"></span>
-    <span class="visually-hidden">Siguiente</span>
-  </button>-->
 </div>
 <!--Aquí tenemos la parte de conócenos de la empresa-->
 <div class="container mt-4">
@@ -457,8 +449,18 @@ en el menú desplegable-->
     } else if (rol === "cliente") {
       document.getElementById("menuCliente").style.display = "block";
     } else {
-      alert("Acceso no autorizado.");
-      window.location.href = "index.html";
+      Swal.fire({
+        icon: 'error',
+        text: 'Acceso no autorizado',
+        confirmButtonText: 'Aceptar',
+        confirmButtonColor: '#0d6efd',
+        background: '#000000',
+        color: '#ffffff'
+      }).then((result) => {
+          if (result.isConfirmed) {
+            window.location.href = "index.html";
+          }
+        });
     }
   });
 </script>
