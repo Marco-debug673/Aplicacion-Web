@@ -73,7 +73,8 @@
 <!-- Firebase SDK como módulo en línea -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-app.js";
-        import { getDatabase, ref, get, onValue, set } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-database.js";
+        import { getDatabase, ref, get, onValue, set, query, orderByChild, equalTo } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-database.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-auth.js";
         // Configuración de Firebase
         const firebaseConfig = {
             apiKey: "AIzaSyDOsQaU-vohMbkc7VujDgklWqz0Yebdjyo",
@@ -88,64 +89,117 @@
 
         const app = initializeApp(firebaseConfig);
         const database = getDatabase(app);
+        const auth = getAuth();
 
         window.addEventListener("DOMContentLoaded", () => {
-            const vehiculosTbody = document.querySelectorAll("table")[1].querySelector("tbody");
-            const vehiculosTable = document.querySelectorAll("table")[1];
             const rol = localStorage.getItem("rol");
             const tableBody = document.getElementById("table-services");
             const saveBtn = document.getElementById("saveBtn");
+            const solicitudesKeys = [];
+            const vehiculosTbody = document.querySelectorAll("table")[1].querySelector("tbody");
+            const vehiculosTable = document.querySelectorAll("table")[1];
 
             // Solo mostrar botón si es mecánico
             saveBtn.style.display = rol === "mecánico" ? "block" : "none";
 
-            const serviciosRef = ref(database, "solicitudes");
-            const solicitudesKeys = [];
+            onAuthStateChanged(auth, (user) => {
+                if (!user) {
+                    console.error("Usuario no autenticado");
+                    return;
+                }
 
-            onValue(serviciosRef, (snapshot) => {
-                tableBody.innerHTML = "";
-                solicitudesKeys.length = 0;
+                let solicitudesRef;
+                if (rol === "mecánico" || rol === "admin") {
+                    // Mecánicos y admins ven todo
+                    solicitudesRef = ref(database, "solicitudes");
+                } else {
+                    // Clientes solo ven sus datos
+                    solicitudesRef = query(
+                    ref(database, "solicitudes"),
+                    orderByChild("uid"),
+                    equalTo(user.uid)
+                    );
+                }
 
-                
-                let index = 0;
-                snapshot.forEach((childSnapshot) => {
-                    const key = childSnapshot.key;
-                    const solicitud = childSnapshot.val();
-                    solicitudesKeys.push(key);
+                onValue(solicitudesRef, (snapshot) => {
+                    tableBody.innerHTML = "";
+                    solicitudesKeys.length = 0;
+                    let index = 0;
 
-                    const fila = document.createElement("tr");
-                    const estadoActual = solicitud.estado || "Seleccione una opción";
+                    snapshot.forEach((childSnapshot) => {
+                        const key = childSnapshot.key;
+                        const solicitud = childSnapshot.val();
+                        solicitudesKeys.push(key);
 
-                    let celdaEstado = "";
+                        const estadoActual = solicitud.estado || "Seleccione una opción";
+                        let celdaEstado = "";
 
-                    if (rol === "mecánico") {
-                        // Mostrar select si es mecánico
-                        celdaEstado = `
-                        <select class="form-select" id="estadoSelect${index}">
-                            <option value="Seleccione una opción" ${estadoActual === "Seleccione una opción" ? "selected" : ""}>Seleccione una opción</option>
-                            <option value="Recibido" ${estadoActual === "Recibido" ? "selected" : ""}>Recibido</option>
-                            <option value="En revisión" ${estadoActual === "En revisión" ? "selected" : ""}>En revisión</option>
-                            <option value="En reparación" ${estadoActual === "En reparación" ? "selected" : ""}>En reparación</option>
-                            <option value="Listo para entregar" ${estadoActual === "Listo para entregar" ? "selected" : ""}>Listo para entregar</option>
-                        </select>`;
-                    } else {
-                        // Mostrar texto si es cliente o admin
-                        celdaEstado = `<span>${estadoActual}</span>`;
-                    }
-                    fila.classList.add("text-center");
-                    fila.innerHTML = `
-                    <td>${solicitud.nombre || ""}</td>
-                    <td>${solicitud.apellidos || ""}</td>
-                    <td>${solicitud.numerotelefono || ""}</td>
-                    <td>${solicitud.tipovehiculo?.tipo || ""}</td>
-                    <td>${solicitud.falladetectada || ""}</td>
-                    <td>${celdaEstado}</td>
-                    `;
-                    tableBody.appendChild(fila);
-                    index++;
+                        if (rol === "mecánico") {
+                            celdaEstado = `
+                            <select class="form-select" id="estadoSelect${index}">
+                                <option value="Seleccione una opción" ${estadoActual === "Seleccione una opción" ? "selected" : ""}>Seleccione una opción</option>
+                                <option value="Recibido" ${estadoActual === "Recibido" ? "selected" : ""}>Recibido</option>
+                                <option value="En revisión" ${estadoActual === "En revisión" ? "selected" : ""}>En revisión</option>
+                                <option value="En reparación" ${estadoActual === "En reparación" ? "selected" : ""}>En reparación</option>
+                                <option value="Listo para entregar" ${estadoActual === "Listo para entregar" ? "selected" : ""}>Listo para entregar</option>
+                            </select>`;
+                        } else {
+                            celdaEstado = `<span>${estadoActual}</span>`;
+                        }
+
+                        const fila = document.createElement("tr");
+                        fila.classList.add("text-center");
+                        fila.innerHTML = `
+                        <td>${solicitud.nombre || ""}</td>
+                        <td>${solicitud.apellidos || ""}</td>
+                        <td>${solicitud.numerotelefono || ""}</td>
+                        <td>${solicitud.tipovehiculo?.tipo || ""}</td>
+                        <td>${solicitud.falladetectada || ""}</td>
+                        <td>${celdaEstado}</td>
+                        `;
+                        tableBody.appendChild(fila);
+                        index++;
+                    });
+
+                    vehiculosTbody.innerHTML = "";
+                    const columnasVisibles = {
+                        tipoCamioneta: false,
+                        capacidadCarga: false,
+                        cilindraje: false,
+                        tipoMoto: false
+                    };
+
+                    snapshot.forEach((childSnapshot) => {
+                        const data = childSnapshot.val();
+                        const datos = data.tipovehiculo?.datos || {};
+
+                        if (datos.tipoCamioneta) columnasVisibles.tipoCamioneta = true;
+                        if (datos.capacidadCarga) columnasVisibles.capacidadCarga = true;
+                        if (datos.cilindraje) columnasVisibles.cilindraje = true;
+                        if (datos.tipoMoto) columnasVisibles.tipoMoto = true;
+                        
+                        const fila = document.createElement("tr");
+                        fila.classList.add("text-center");
+                        fila.innerHTML = `
+                        <td>${datos.marca || ""}</td>
+                        <td>${datos.modelo || ""}</td>
+                        <td>${datos.anio || ""}</td>
+                        <td class="col-tipoCamioneta">${datos.tipoCamioneta || ""}</td>
+                        <td class="col-capacidadCarga">${datos.capacidadCarga || ""}</td>
+                        <td class="col-cilindraje">${datos.cilindraje || ""}</td>
+                        <td class="col-tipoMoto">${datos.tipoMoto || ""}</td>
+                        <td>${datos.combustible || ""}</td>
+                        <td>${datos.color || ""}</td>
+                        `;
+                        vehiculosTbody.appendChild(fila);
+                    });
+
+                    if (!columnasVisibles.tipoCamioneta) ocultarColumna(vehiculosTable, 3);
+                    if (!columnasVisibles.capacidadCarga) ocultarColumna(vehiculosTable, 4);
+                    if (!columnasVisibles.cilindraje) ocultarColumna(vehiculosTable, 5);
+                    if (!columnasVisibles.tipoMoto) ocultarColumna(vehiculosTable, 6);
                 });
             });
-
             // Guardar los cambios solo si es mecánico
             saveBtn.addEventListener("click", () => {
                 if (rol !== "mecánico") return;
@@ -176,57 +230,7 @@
                     console.error("Error al guardar estados:", error);
                 });
             });
-
-            //Se muestran los datos del vehículo en esta tabla Datos del Vehículo
-            const vehiculosRef = ref(database, "solicitudes");
             
-            onValue(vehiculosRef, (snapshot) => {
-                vehiculosTbody.innerHTML = "";
-
-                const columnasVisibles = {
-                    tipoCamioneta: false,
-                    capacidadCarga: false,
-                    cilindraje: false,
-                    tipoMoto: false
-                };
-
-                if (snapshot.exists()) {
-                    snapshot.forEach((childSnapshot) => {
-                        const data = childSnapshot.val();
-                        const datos = data.tipovehiculo?.datos || {};
-
-                        if (datos.tipoCamioneta) columnasVisibles.tipoCamioneta = true;
-                        if (datos.capacidadCarga) columnasVisibles.capacidadCarga = true;
-                        if (datos.cilindraje) columnasVisibles.cilindraje = true;
-                        if (datos.tipoMoto) columnasVisibles.tipoMoto = true;
-                        
-                        const fila = document.createElement("tr");
-                        fila.classList.add("text-center");
-                        fila.innerHTML = `
-                        <td>${datos.marca || ""}</td>
-                        <td>${datos.modelo || ""}</td>
-                        <td>${datos.anio || ""}</td>
-                        <td class="col-tipoCamioneta">${datos.tipoCamioneta || ""}</td>
-                        <td class="col-capacidadCarga">${datos.capacidadCarga || ""}</td>
-                        <td class="col-cilindraje">${datos.cilindraje || ""}</td>
-                        <td class="col-tipoMoto">${datos.tipoMoto || ""}</td>
-                        <td>${datos.combustible || ""}</td>
-                        <td>${datos.color || ""}</td>
-                        `;
-                        vehiculosTbody.appendChild(fila);
-                    });
-
-                    if (!columnasVisibles.tipoCamioneta) ocultarColumna(vehiculosTable, 3);
-                    if (!columnasVisibles.capacidadCarga) ocultarColumna(vehiculosTable, 4);
-                    if (!columnasVisibles.cilindraje) ocultarColumna(vehiculosTable, 5);
-                    if (!columnasVisibles.tipoMoto) ocultarColumna(vehiculosTable, 6);
-                } else {
-                    console.log("No hay vehículos registrados.");
-                }
-            }, (error) => {
-                console.error("Error al obtener datos de vehículos:", error);
-            });
-
             function ocultarColumna(tabla, index) {
                 for (const fila of tabla.rows) {
                     if (fila.cells[index]) {
